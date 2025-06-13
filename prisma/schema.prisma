@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash   String?
+  fullName      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  lastLoginAt   DateTime?
+  isPremium     Boolean        @default(false)
+  premiumUntil  DateTime?
+  letters       Letter[]
+  subscription  Subscription?
+  sessions      UserSession[]
+
+  @@map("users")
+}
+
+model Letter {
+  id               String   @id @default(uuid())
+  userId           String
+  letterType       String
+  senderName       String
+  recipientName    String
+  date             DateTime
+  situationDetails String
+  includeAddress   Boolean  @default(false)
+  content          String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  pdfPath          String?
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("letters")
+}
+
+model LetterTemplate {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  templateText String
+  isPremium    Boolean  @default(false)
+  category     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("letter_templates")
+}
+
+model Subscription {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  stripeCustomerId   String?
+  stripeSubscriptionId String?
+  planType           String
+  status             String
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model UserSession {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  ipAddress  String?
+  userAgent  String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("user_sessions")
+}
+
+model MagicLink {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
+
+  @@index([token])
+  @@index([email])
+  @@map("magic_links")
+}
